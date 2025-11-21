@@ -346,19 +346,60 @@
 
                 console.log(`Total picks loaded: ${allSheetData.length}`);
 
-                // Remove duplicates based on date + pick combination
-                const uniquePicks = [];
-                const seen = new Set();
+                // Smart deduplication: prefer picks with sport/league data
+                const pickMap = new Map();
 
                 allSheetData.forEach(pick => {
                     const key = `${pick.date}_${pick.pick}_${pick.odds}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        uniquePicks.push(pick);
+
+                    if (!pickMap.has(key)) {
+                        // First time seeing this pick
+                        // If from a sport-specific sheet, auto-populate sport/league
+                        if (['NFL', 'NHL', 'NBA', 'MLB', 'NCAAF', 'NCAAB'].includes(pick.sheet)) {
+                            if (!pick.sport || !pick.league) {
+                                pick.sport = pick.sheet;
+                                pick.league = pick.sheet;
+                            }
+                        }
+                        pickMap.set(key, pick);
+                    } else {
+                        // Already have this pick - merge data intelligently
+                        const existing = pickMap.get(key);
+
+                        // If from a sport-specific sheet, auto-populate sport/league
+                        if (['NFL', 'NHL', 'NBA', 'MLB', 'NCAAF', 'NCAAB'].includes(pick.sheet)) {
+                            if (!pick.sport || !pick.league) {
+                                pick.sport = pick.sheet;
+                                pick.league = pick.sheet;
+                            }
+                        }
+
+                        // Prefer the version with sport/league data
+                        const existingHasSport = existing.sport && existing.sport.trim();
+                        const pickHasSport = pick.sport && pick.sport.trim();
+
+                        if (pickHasSport && !existingHasSport) {
+                            // New pick has sport data, existing doesn't - replace
+                            pickMap.set(key, pick);
+                        } else if (!pickHasSport && existingHasSport) {
+                            // Keep existing with sport data
+                        } else {
+                            // Both have or both don't have - merge fields
+                            // Prefer non-empty values from either source
+                            pickMap.set(key, {
+                                ...existing,
+                                sport: pick.sport || existing.sport,
+                                league: pick.league || existing.league,
+                                gradeUnit: pick.gradeUnit || existing.gradeUnit,
+                                result: pick.result || existing.result,
+                                status: pick.status || existing.status
+                            });
+                        }
                     }
                 });
 
-                console.log(`Unique picks after deduplication: ${uniquePicks.length}`);
+                const uniquePicks = Array.from(pickMap.values());
+                console.log(`Unique picks after smart deduplication: ${uniquePicks.length}`);
 
                 allData = uniquePicks;
                 displayPicks(currentTab);
