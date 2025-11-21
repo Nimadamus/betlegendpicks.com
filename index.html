@@ -299,14 +299,24 @@
                     if (lines[i].trim()) {
                         const values = parseCSVLine(lines[i]);
                         if (values[0] && values[0].trim()) { // Skip empty rows
+                            // Auto-populate sport/league from sheet name if not present
+                            let league = values[5] || '';
+                            let sport = values[6] || '';
+
+                            // If league/sport is empty and we're on a sport-specific sheet, use sheet name
+                            if (!league && !sport && sheetName !== 'Master' && sheetName !== 'Sheet1' && sheetName !== 'To Be Graded') {
+                                league = sheetName;
+                                sport = sheetName;
+                            }
+
                             data.push({
                                 date: values[0] || '',           // A: Date
                                 pick: values[1] || '',           // B: Pick
                                 odds: values[2] || '',           // C: Odds
                                 confidence: values[3] || '',     // D: Result (confidence)
                                 units: values[4] || '',          // E: Units (calculated)
-                                league: values[5] || '',         // F: League
-                                sport: values[6] || '',          // G: Sport
+                                league: league,                  // F: League
+                                sport: sport,                    // G: Sport
                                 status: values[7] || '',         // H: Ready (POSTED/DONE)
                                 postedAt: values[8] || '',       // I: PostedAt
                                 result: values[9] || '',         // J: Pushed and Graded
