@@ -293,17 +293,17 @@
                         const values = parseCSVLine(lines[i]);
                         if (values[0] && values[0].trim()) { // Skip empty rows
                             allSheetData.push({
-                                date: values[0] || '',
-                                pick: values[1] || '',
-                                units: values[2] || '',
-                                confidence: values[3] || '',
-                                league: values[4] || '',
-                                sport: values[5] || '',
-                                status: values[6] || '',
-                                result: values[7] || '',
-                                win: values[8] || '',
-                                loss: values[9] || '',
-                                notes: values[10] || ''
+                                date: values[0] || '',           // A: Date
+                                pick: values[1] || '',           // B: Pick
+                                odds: values[2] || '',           // C: Odds
+                                confidence: values[3] || '',     // D: Result (confidence)
+                                units: values[4] || '',          // E: Units (calculated)
+                                league: values[5] || '',         // F: League
+                                sport: values[6] || '',          // G: Sport
+                                status: values[7] || '',         // H: Ready (POSTED/DONE)
+                                postedAt: values[8] || '',       // I: PostedAt
+                                result: values[9] || '',         // J: Pushed and Graded
+                                gradeUnit: values[10] || ''      // K: GRADE UNIT (W/L/P)
                             });
                         }
                     }
