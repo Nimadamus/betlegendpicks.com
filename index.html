@@ -299,12 +299,13 @@
                     if (lines[i].trim()) {
                         const values = parseCSVLine(lines[i]);
                         if (values[0] && values[0].trim()) { // Skip empty rows
-                            // Auto-populate sport/league from sheet name if not present
+                            // Auto-populate sport/league from sheet name for sport-specific sheets
                             let league = values[5] || '';
                             let sport = values[6] || '';
 
-                            // If league/sport is empty and we're on a sport-specific sheet, use sheet name
-                            if (!league && !sport && sheetName !== 'Master' && sheetName !== 'Sheet1' && sheetName !== 'To Be Graded') {
+                            // For sport-specific sheets, always use the sheet name to ensure proper filtering
+                            const sportSheets = ['NFL', 'NHL', 'NBA', 'MLB', 'NCAAF', 'NCAAB'];
+                            if (sportSheets.includes(sheetName)) {
                                 league = sheetName;
                                 sport = sheetName;
                             }
@@ -327,7 +328,8 @@
                     }
                 }
 
-                console.log(`Loaded ${data.length} picks from ${sheetName}`);
+                const gradedCount = data.filter(p => p.gradeUnit && p.gradeUnit !== '').length;
+                console.log(`Loaded ${data.length} picks from ${sheetName} (${gradedCount} graded)`);
                 return data;
             } catch (error) {
                 console.warn(`Error fetching ${sheetName}:`, error);
@@ -513,8 +515,11 @@
                 })
                 : allData;
 
+            console.log(`Records for ${sportFilter || 'ALL'}: ${filteredData.length} total picks`);
+
             // Calculate records
             const gradedPicks = filteredData.filter(p => p.gradeUnit && p.gradeUnit !== '');
+            console.log(`  - ${gradedPicks.length} graded picks found`);
             const wins = gradedPicks.filter(p => p.gradeUnit === 'W').length;
             const losses = gradedPicks.filter(p => p.gradeUnit === 'L').length;
             const pushes = gradedPicks.filter(p => p.gradeUnit === 'P').length;
