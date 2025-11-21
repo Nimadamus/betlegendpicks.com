@@ -263,148 +263,61 @@
     <script>
         const SHEET_ID = '1izhxwiiazn99SRqcK8QpUE4pfvDRIFpgSyw5ZlMsvmY';
 
-        // Sheet GIDs (tab IDs) for different tabs
-        // We'll try multiple sheets and combine the data
-        const SHEET_GIDS = {
-            'Master': '0',           // Main master sheet
-            'Sheet1': '0',           // Same as master
-            'NFL': '1340634487',     // Old NFL sheet
-            'NHL': '157750139',      // Old NHL sheet
-            'NBA': '450115554',      // Old NBA sheet
-            'MLB': '1664985008',     // Old MLB sheet
-            'NCAAF': '1967431114',   // Old NCAAF sheet
-            'NCAAB': '672287013',    // Old NCAAB sheet
-            'To Be Graded': '1737084278'  // To Be Graded sheet
+        // Sheet GIDs (tab IDs) - these correspond to each sport sheet
+        const SHEET_TABS = {
+            'Sheet1': '0',
+            'NFL': null,      // You'll need to get these GIDs from your sheet URLs
+            'NHL': null,
+            'NBA': null,
+            'NCAAF': null,
+            'NCAAB': null,
+            'To Be Graded': null
         };
 
         let allData = [];
         let currentTab = 'all';
 
-        async function fetchSheetData(gid, sheetName) {
+        async function loadPicks() {
+            const container = document.getElementById('picks-container');
+            container.innerHTML = '<div class="loading">Loading picks...</div>';
+
             try {
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+                const allSheetData = [];
+
+                // Load from main sheet (Sheet1/gid=0) which should contain all picks
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
                 const response = await fetch(csvUrl);
 
                 if (!response.ok) {
-                    console.warn(`Failed to fetch sheet ${sheetName} (gid=${gid})`);
-                    return [];
+                    throw new Error('Failed to fetch sheet. Make sure it is shared publicly.');
                 }
 
                 const csvText = await response.text();
                 const lines = csvText.split('\n');
-                const data = [];
 
                 // Skip header row
                 for (let i = 1; i < lines.length; i++) {
                     if (lines[i].trim()) {
                         const values = parseCSVLine(lines[i]);
                         if (values[0] && values[0].trim()) { // Skip empty rows
-                            // Auto-populate sport/league from sheet name for sport-specific sheets
-                            let league = values[5] || '';
-                            let sport = values[6] || '';
-
-                            // For sport-specific sheets, always use the sheet name to ensure proper filtering
-                            const sportSheets = ['NFL', 'NHL', 'NBA', 'MLB', 'NCAAF', 'NCAAB'];
-                            if (sportSheets.includes(sheetName)) {
-                                league = sheetName;
-                                sport = sheetName;
-                            }
-
-                            data.push({
+                            allSheetData.push({
                                 date: values[0] || '',           // A: Date
                                 pick: values[1] || '',           // B: Pick
                                 odds: values[2] || '',           // C: Odds
                                 confidence: values[3] || '',     // D: Result (confidence)
                                 units: values[4] || '',          // E: Units (calculated)
-                                league: league,                  // F: League
-                                sport: sport,                    // G: Sport
+                                league: values[5] || '',         // F: League
+                                sport: values[6] || '',          // G: Sport
                                 status: values[7] || '',         // H: Ready (POSTED/DONE)
                                 postedAt: values[8] || '',       // I: PostedAt
                                 result: values[9] || '',         // J: Pushed and Graded
-                                gradeUnit: values[10] || '',     // K: GRADE UNIT (W/L/P)
-                                sheet: sheetName                 // Track which sheet this came from
+                                gradeUnit: values[10] || ''      // K: GRADE UNIT (W/L/P)
                             });
                         }
                     }
                 }
 
-                const gradedCount = data.filter(p => p.gradeUnit && p.gradeUnit !== '').length;
-                console.log(`Loaded ${data.length} picks from ${sheetName} (${gradedCount} graded)`);
-                return data;
-            } catch (error) {
-                console.warn(`Error fetching ${sheetName}:`, error);
-                return [];
-            }
-        }
-
-        async function loadPicks() {
-            const container = document.getElementById('picks-container');
-            container.innerHTML = '<div class="loading">Loading picks from all sheets...</div>';
-
-            try {
-                const allSheetData = [];
-
-                // Fetch from all sheets in parallel
-                const fetchPromises = Object.entries(SHEET_GIDS).map(([name, gid]) =>
-                    fetchSheetData(gid, name)
-                );
-
-                const results = await Promise.all(fetchPromises);
-
-                // Combine all results
-                results.forEach(sheetData => {
-                    allSheetData.push(...sheetData);
-                });
-
-                console.log(`Total picks loaded: ${allSheetData.length}`);
-
-                // Debug: Show unique sport/league values
-                const uniqueSports = [...new Set(allSheetData.map(p => p.sport).filter(s => s))];
-                const uniqueLeagues = [...new Set(allSheetData.map(p => p.league).filter(l => l))];
-                console.log('Unique sports found:', uniqueSports);
-                console.log('Unique leagues found:', uniqueLeagues);
-
-                // Debug: Count graded picks per sport/league
-                uniqueLeagues.forEach(league => {
-                    const leaguePicks = allSheetData.filter(p => p.league === league);
-                    const gradedCount = leaguePicks.filter(p => p.gradeUnit && p.gradeUnit !== '').length;
-                    console.log(`  ${league}: ${leaguePicks.length} total, ${gradedCount} graded`);
-                });
-
-                // Remove duplicates based on date + pick combination
-                // When duplicates exist, prefer picks with gradeUnit, then with sport/league populated
-                const pickMap = new Map();
-
-                allSheetData.forEach(pick => {
-                    const key = `${pick.date}_${pick.pick}_${pick.odds}`;
-                    const existing = pickMap.get(key);
-
-                    if (!existing) {
-                        pickMap.set(key, pick);
-                    } else {
-                        // Prefer pick with gradeUnit (graded picks)
-                        if (pick.gradeUnit && !existing.gradeUnit) {
-                            pickMap.set(key, pick);
-                        }
-                        // If both have gradeUnit or neither do, prefer one with sport/league
-                        else if (!!pick.gradeUnit === !!existing.gradeUnit) {
-                            if ((pick.sport || pick.league) && !(existing.sport || existing.league)) {
-                                pickMap.set(key, pick);
-                            }
-                            // If existing has no sport but pick does, use pick's sport
-                            else if (!existing.sport && pick.sport) {
-                                existing.sport = pick.sport;
-                                existing.league = pick.league || existing.league;
-                            }
-                        }
-                    }
-                });
-
-                const uniquePicks = Array.from(pickMap.values());
-
-                console.log(`Unique picks after deduplication: ${uniquePicks.length}`);
-
-                allData = uniquePicks;
+                allData = allSheetData;
                 displayPicks(currentTab);
                 updateStats();
 
@@ -547,11 +460,8 @@
                 })
                 : allData;
 
-            console.log(`Records for ${sportFilter || 'ALL'}: ${filteredData.length} total picks`);
-
             // Calculate records
             const gradedPicks = filteredData.filter(p => p.gradeUnit && p.gradeUnit !== '');
-            console.log(`  - ${gradedPicks.length} graded picks found`);
             const wins = gradedPicks.filter(p => p.gradeUnit === 'W').length;
             const losses = gradedPicks.filter(p => p.gradeUnit === 'L').length;
             const pushes = gradedPicks.filter(p => p.gradeUnit === 'P').length;
