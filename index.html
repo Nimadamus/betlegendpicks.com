@@ -451,9 +451,13 @@
             else if (filter === 'records-ncaaf') sportFilter = 'NCAAF';
             else if (filter === 'records-ncaab') sportFilter = 'NCAAB';
 
-            // Filter data
+            // Filter data - case insensitive matching
             let filteredData = sportFilter
-                ? allData.filter(pick => pick.sport === sportFilter || pick.league === sportFilter)
+                ? allData.filter(pick => {
+                    const pickSport = (pick.sport || '').toUpperCase();
+                    const pickLeague = (pick.league || '').toUpperCase();
+                    return pickSport === sportFilter || pickLeague === sportFilter;
+                })
                 : allData;
 
             // Calculate records
@@ -469,7 +473,11 @@
             if (!sportFilter) {
                 const sports = ['NFL', 'NHL', 'NBA', 'MLB', 'NCAAF', 'NCAAB'];
                 sports.forEach(sport => {
-                    const sportPicks = allData.filter(p => p.sport === sport || p.league === sport);
+                    const sportPicks = allData.filter(p => {
+                        const pickSport = (p.sport || '').toUpperCase();
+                        const pickLeague = (p.league || '').toUpperCase();
+                        return pickSport === sport || pickLeague === sport;
+                    });
                     const sportGraded = sportPicks.filter(p => p.gradeUnit && p.gradeUnit !== '');
                     if (sportGraded.length > 0) {
                         const sWins = sportGraded.filter(p => p.gradeUnit === 'W').length;
@@ -579,6 +587,18 @@
                 });
 
                 html += '</tbody></table>';
+            } else if (sportFilter) {
+                // Show helpful message when no graded picks for this sport
+                html += `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <h3 style="margin-bottom: 15px;">No Graded Picks for ${sportFilter} Yet</h3>
+                        <p>Once you grade picks for ${sportFilter} in your Google Sheet (Column K), they will appear here.</p>
+                        <p style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>Tip:</strong> Make sure Column F (League) or Column G (Sport) contains "${sportFilter}" for your picks.
+                        </p>
+                        ${filteredData.length > 0 ? `<p style="margin-top: 10px; color: #2196f3;">You have ${filteredData.length} ungraded ${sportFilter} pick(s)</p>` : ''}
+                    </div>
+                `;
             }
 
             container.innerHTML = html;
