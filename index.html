@@ -358,6 +358,19 @@
 
                 console.log(`Total picks loaded: ${allSheetData.length}`);
 
+                // Debug: Show unique sport/league values
+                const uniqueSports = [...new Set(allSheetData.map(p => p.sport).filter(s => s))];
+                const uniqueLeagues = [...new Set(allSheetData.map(p => p.league).filter(l => l))];
+                console.log('Unique sports found:', uniqueSports);
+                console.log('Unique leagues found:', uniqueLeagues);
+
+                // Debug: Count graded picks per sport/league
+                uniqueLeagues.forEach(league => {
+                    const leaguePicks = allSheetData.filter(p => p.league === league);
+                    const gradedCount = leaguePicks.filter(p => p.gradeUnit && p.gradeUnit !== '').length;
+                    console.log(`  ${league}: ${leaguePicks.length} total, ${gradedCount} graded`);
+                });
+
                 // Remove duplicates based on date + pick combination
                 const uniquePicks = [];
                 const seen = new Set();
