@@ -263,44 +263,43 @@
     <script>
         const SHEET_ID = '1izhxwiiazn99SRqcK8QpUE4pfvDRIFpgSyw5ZlMsvmY';
 
-        // Sheet GIDs (tab IDs) - these correspond to each sport sheet
-        const SHEET_TABS = {
-            'Sheet1': '0',
-            'NFL': null,      // You'll need to get these GIDs from your sheet URLs
-            'NHL': null,
-            'NBA': null,
-            'NCAAF': null,
-            'NCAAB': null,
-            'To Be Graded': null
+        // Sheet GIDs (tab IDs) for different tabs
+        // We'll try multiple sheets and combine the data
+        const SHEET_GIDS = {
+            'Master': '0',           // Main master sheet
+            'Sheet1': '0',           // Same as master
+            'NFL': '1340634487',     // Old NFL sheet
+            'NHL': '157750139',      // Old NHL sheet
+            'NBA': '450115554',      // Old NBA sheet
+            'MLB': '1664985008',     // Old MLB sheet
+            'NCAAF': '1967431114',   // Old NCAAF sheet
+            'NCAAB': '672287013',    // Old NCAAB sheet
+            'To Be Graded': '1737084278'  // To Be Graded sheet
         };
 
         let allData = [];
         let currentTab = 'all';
 
-        async function loadPicks() {
-            const container = document.getElementById('picks-container');
-            container.innerHTML = '<div class="loading">Loading picks...</div>';
-
+        async function fetchSheetData(gid, sheetName) {
             try {
-                const allSheetData = [];
-
-                // Load from main sheet (Sheet1/gid=0) which should contain all picks
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
                 const response = await fetch(csvUrl);
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch sheet. Make sure it is shared publicly.');
+                    console.warn(`Failed to fetch sheet ${sheetName} (gid=${gid})`);
+                    return [];
                 }
 
                 const csvText = await response.text();
                 const lines = csvText.split('\n');
+                const data = [];
 
                 // Skip header row
                 for (let i = 1; i < lines.length; i++) {
                     if (lines[i].trim()) {
                         const values = parseCSVLine(lines[i]);
                         if (values[0] && values[0].trim()) { // Skip empty rows
-                            allSheetData.push({
+                            data.push({
                                 date: values[0] || '',           // A: Date
                                 pick: values[1] || '',           // B: Pick
                                 odds: values[2] || '',           // C: Odds
@@ -311,13 +310,57 @@
                                 status: values[7] || '',         // H: Ready (POSTED/DONE)
                                 postedAt: values[8] || '',       // I: PostedAt
                                 result: values[9] || '',         // J: Pushed and Graded
-                                gradeUnit: values[10] || ''      // K: GRADE UNIT (W/L/P)
+                                gradeUnit: values[10] || '',     // K: GRADE UNIT (W/L/P)
+                                sheet: sheetName                 // Track which sheet this came from
                             });
                         }
                     }
                 }
 
-                allData = allSheetData;
+                console.log(`Loaded ${data.length} picks from ${sheetName}`);
+                return data;
+            } catch (error) {
+                console.warn(`Error fetching ${sheetName}:`, error);
+                return [];
+            }
+        }
+
+        async function loadPicks() {
+            const container = document.getElementById('picks-container');
+            container.innerHTML = '<div class="loading">Loading picks from all sheets...</div>';
+
+            try {
+                const allSheetData = [];
+
+                // Fetch from all sheets in parallel
+                const fetchPromises = Object.entries(SHEET_GIDS).map(([name, gid]) =>
+                    fetchSheetData(gid, name)
+                );
+
+                const results = await Promise.all(fetchPromises);
+
+                // Combine all results
+                results.forEach(sheetData => {
+                    allSheetData.push(...sheetData);
+                });
+
+                console.log(`Total picks loaded: ${allSheetData.length}`);
+
+                // Remove duplicates based on date + pick combination
+                const uniquePicks = [];
+                const seen = new Set();
+
+                allSheetData.forEach(pick => {
+                    const key = `${pick.date}_${pick.pick}_${pick.odds}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        uniquePicks.push(pick);
+                    }
+                });
+
+                console.log(`Unique picks after deduplication: ${uniquePicks.length}`);
+
+                allData = uniquePicks;
                 displayPicks(currentTab);
                 updateStats();
 
