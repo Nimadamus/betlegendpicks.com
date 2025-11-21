@@ -237,9 +237,17 @@
             <button class="tab" onclick="switchTab('NFL')">NFL</button>
             <button class="tab" onclick="switchTab('NHL')">NHL</button>
             <button class="tab" onclick="switchTab('NBA')">NBA</button>
+            <button class="tab" onclick="switchTab('MLB')">MLB</button>
             <button class="tab" onclick="switchTab('NCAAF')">NCAAF</button>
             <button class="tab" onclick="switchTab('NCAAB')">NCAAB</button>
             <button class="tab" onclick="switchTab('To Be Graded')">To Be Graded</button>
+            <button class="tab" onclick="switchTab('records-all')">📊 All Records</button>
+            <button class="tab" onclick="switchTab('records-nfl')">NFL Records</button>
+            <button class="tab" onclick="switchTab('records-nhl')">NHL Records</button>
+            <button class="tab" onclick="switchTab('records-nba')">NBA Records</button>
+            <button class="tab" onclick="switchTab('records-mlb')">MLB Records</button>
+            <button class="tab" onclick="switchTab('records-ncaaf')">NCAAF Records</button>
+            <button class="tab" onclick="switchTab('records-ncaab')">NCAAB Records</button>
         </div>
 
         <div class="content">
@@ -372,12 +380,18 @@
         function displayPicks(filter) {
             const container = document.getElementById('picks-container');
 
+            // Check if this is a records view
+            if (filter.startsWith('records-')) {
+                displayRecords(filter);
+                return;
+            }
+
             let filteredData = allData;
             if (filter !== 'all') {
                 if (filter === 'To Be Graded') {
                     filteredData = allData.filter(pick => pick.sheet === 'To Be Graded' || pick.status === 'POSTED');
                 } else {
-                    filteredData = allData.filter(pick => pick.sheet === filter || pick.league === filter);
+                    filteredData = allData.filter(pick => pick.sheet === filter || pick.league === filter || pick.sport === filter);
                 }
             }
 
@@ -422,6 +436,151 @@
             });
 
             html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function displayRecords(filter) {
+            const container = document.getElementById('picks-container');
+
+            // Determine which sport to filter by
+            let sportFilter = null;
+            if (filter === 'records-nfl') sportFilter = 'NFL';
+            else if (filter === 'records-nhl') sportFilter = 'NHL';
+            else if (filter === 'records-nba') sportFilter = 'NBA';
+            else if (filter === 'records-mlb') sportFilter = 'MLB';
+            else if (filter === 'records-ncaaf') sportFilter = 'NCAAF';
+            else if (filter === 'records-ncaab') sportFilter = 'NCAAB';
+
+            // Filter data
+            let filteredData = sportFilter
+                ? allData.filter(pick => pick.sport === sportFilter || pick.league === sportFilter)
+                : allData;
+
+            // Calculate records
+            const gradedPicks = filteredData.filter(p => p.gradeUnit && p.gradeUnit !== '');
+            const wins = gradedPicks.filter(p => p.gradeUnit === 'W').length;
+            const losses = gradedPicks.filter(p => p.gradeUnit === 'L').length;
+            const pushes = gradedPicks.filter(p => p.gradeUnit === 'P').length;
+            const totalUnits = gradedPicks.reduce((sum, p) => sum + (parseFloat(p.units) || 0), 0).toFixed(2);
+            const winPct = gradedPicks.length > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : '0.0';
+
+            // Group by league if showing all records
+            let recordsByLeague = {};
+            if (!sportFilter) {
+                const sports = ['NFL', 'NHL', 'NBA', 'MLB', 'NCAAF', 'NCAAB'];
+                sports.forEach(sport => {
+                    const sportPicks = allData.filter(p => p.sport === sport || p.league === sport);
+                    const sportGraded = sportPicks.filter(p => p.gradeUnit && p.gradeUnit !== '');
+                    if (sportGraded.length > 0) {
+                        const sWins = sportGraded.filter(p => p.gradeUnit === 'W').length;
+                        const sLosses = sportGraded.filter(p => p.gradeUnit === 'L').length;
+                        const sPushes = sportGraded.filter(p => p.gradeUnit === 'P').length;
+                        const sUnits = sportGraded.reduce((sum, p) => sum + (parseFloat(p.units) || 0), 0).toFixed(2);
+                        const sWinPct = (sWins + sLosses) > 0 ? ((sWins / (sWins + sLosses)) * 100).toFixed(1) : '0.0';
+
+                        recordsByLeague[sport] = {
+                            wins: sWins,
+                            losses: sLosses,
+                            pushes: sPushes,
+                            units: sUnits,
+                            winPct: sWinPct
+                        };
+                    }
+                });
+            }
+
+            let html = `
+                <div class="stats-container" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-value">${wins}-${losses}${pushes > 0 ? '-' + pushes : ''}</div>
+                        <div class="stat-label">Record (W-L${pushes > 0 ? '-P' : ''})</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${winPct}%</div>
+                        <div class="stat-label">Win Percentage</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="color: ${totalUnits >= 0 ? '#4caf50' : '#f44336'}">${totalUnits >= 0 ? '+' : ''}${totalUnits}</div>
+                        <div class="stat-label">Total Units</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${gradedPicks.length}</div>
+                        <div class="stat-label">Graded Picks</div>
+                    </div>
+                </div>
+            `;
+
+            if (!sportFilter && Object.keys(recordsByLeague).length > 0) {
+                html += `
+                    <h3 style="margin-bottom: 15px; color: #333;">Records by Sport</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sport</th>
+                                <th>Record</th>
+                                <th>Win %</th>
+                                <th>Units</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                Object.keys(recordsByLeague).forEach(sport => {
+                    const rec = recordsByLeague[sport];
+                    const unitsClass = parseFloat(rec.units) >= 0 ? 'positive' : 'negative';
+                    html += `
+                        <tr>
+                            <td><span class="sport-badge">${sport}</span></td>
+                            <td>${rec.wins}-${rec.losses}${rec.pushes > 0 ? '-' + rec.pushes : ''}</td>
+                            <td>${rec.winPct}%</td>
+                            <td class="${unitsClass}">${rec.units >= 0 ? '+' : ''}${rec.units}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+            }
+
+            // Show detailed picks for this sport
+            if (gradedPicks.length > 0) {
+                html += `
+                    <h3 style="margin: 30px 0 15px; color: #333;">Recent Graded Picks</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Pick</th>
+                                <th>Odds</th>
+                                <th>Units</th>
+                                <th>Result</th>
+                                <th>League</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                // Show most recent graded picks (last 20)
+                const recentPicks = gradedPicks.slice(-20).reverse();
+                recentPicks.forEach(pick => {
+                    const unitsClass = parseFloat(pick.units) >= 0 ? 'positive' : 'negative';
+                    const resultBadge = pick.gradeUnit === 'W' ? 'status-posted' :
+                                       pick.gradeUnit === 'L' ? 'status-graded' : '';
+
+                    html += `
+                        <tr>
+                            <td>${pick.date}</td>
+                            <td>${pick.pick}</td>
+                            <td>${pick.odds}</td>
+                            <td class="${unitsClass}">${pick.units >= 0 ? '+' : ''}${pick.units}</td>
+                            <td><span class="${resultBadge}">${pick.gradeUnit}</span></td>
+                            <td><span class="sport-badge">${pick.league}</span></td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+            }
+
             container.innerHTML = html;
         }
 
