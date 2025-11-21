@@ -372,16 +372,35 @@
                 });
 
                 // Remove duplicates based on date + pick combination
-                const uniquePicks = [];
-                const seen = new Set();
+                // When duplicates exist, prefer picks with gradeUnit, then with sport/league populated
+                const pickMap = new Map();
 
                 allSheetData.forEach(pick => {
                     const key = `${pick.date}_${pick.pick}_${pick.odds}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        uniquePicks.push(pick);
+                    const existing = pickMap.get(key);
+
+                    if (!existing) {
+                        pickMap.set(key, pick);
+                    } else {
+                        // Prefer pick with gradeUnit (graded picks)
+                        if (pick.gradeUnit && !existing.gradeUnit) {
+                            pickMap.set(key, pick);
+                        }
+                        // If both have gradeUnit or neither do, prefer one with sport/league
+                        else if (!!pick.gradeUnit === !!existing.gradeUnit) {
+                            if ((pick.sport || pick.league) && !(existing.sport || existing.league)) {
+                                pickMap.set(key, pick);
+                            }
+                            // If existing has no sport but pick does, use pick's sport
+                            else if (!existing.sport && pick.sport) {
+                                existing.sport = pick.sport;
+                                existing.league = pick.league || existing.league;
+                            }
+                        }
                     }
                 });
+
+                const uniquePicks = Array.from(pickMap.values());
 
                 console.log(`Unique picks after deduplication: ${uniquePicks.length}`);
 
