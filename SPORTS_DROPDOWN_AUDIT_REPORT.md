@@ -1,29 +1,33 @@
-# BetLegend Picks - UPDATED Sports Dropdown Audit Report
-**Date:** December 21, 2025 (UPDATED)
+# BetLegend Picks - CORRECTED Sports Dropdown Audit Report
+**Date:** December 21, 2025 (FINAL CORRECTED VERSION)
 **Auditor:** Claude Code
 **Branch:** claude/fix-sports-dropdown-OgvMz
 
 ---
 
-## CRITICAL UPDATE: LIVE SITE AUDIT FINDINGS
+## IMPORTANT CORRECTION
 
-After thorough examination of the **LIVE website** at betlegendpicks.com, the issues are **FAR MORE SEVERE** than initially documented.
+**Previous audit incorrectly flagged player trades as "fabricated."** After verification, these trades are REAL:
+
+- **Kevin Durant to Houston Rockets** - REAL (July 2025, 7-team trade)
+- **Mitch Marner to Vegas Golden Knights** - REAL (July 1, 2025, sign-and-trade)
+- **Luka Doncic to Los Angeles Lakers** - REAL (February 2, 2025, 3-team trade for Anthony Davis)
+
+The trade content on NBA and NHL pages is ACCURATE.
 
 ---
 
-## EXECUTIVE SUMMARY - UPDATED
+## ACTUAL ISSUES REQUIRING FIXES
 
-| Sport | Total Pages Claimed | Actual Unique Pages | DUPLICATE Pages | Missing Dates | Fabricated Content |
-|-------|---------------------|---------------------|-----------------|---------------|-------------------|
-| **NFL** | 14 | 11 | 2 (Week 9) | 3+ dates | None found |
-| **MLB** | 2 | 1 | 0 | 1 page | Outdated |
-| **NCAAF** | 17 | ~5 unique | **12+ DUPLICATES** | Many | Yes |
-| **NBA** | 12 | ~6 | Unknown | 6+ pages | **FALSE TRADES** |
-| **NCAAB** | 8 | ~5 | Unknown | 3+ pages | Wrong logos |
-| **NHL** | 8 or 19?? | ~5 | Unknown | Many | **FALSE TRADES** |
-| **Soccer** | 27 | Unknown | Unknown | Unknown | Mislabeled leagues |
-
-**TOTAL CRITICAL ISSUES: 100+**
+| Sport | Issue | Severity | Description |
+|-------|-------|----------|-------------|
+| **NCAAF** | Duplicate Pages | CRITICAL | Pages 5-17 show same Nov 28 content |
+| **NCAAB** | Wrong Logo | HIGH | Georgetown shows Oregon logo (ID 2250 vs 2247) |
+| ~~NCAAB~~ | ~~Placeholder Text~~ | ~~N/A~~ | "Mortgage Matchup Center" is REAL (PHX Arena sponsor name) |
+| **Soccer** | Dual Pagination | MEDIUM | Two conflicting page indicators |
+| **NCAAB** | Dual Pagination | MEDIUM | Two conflicting page indicators |
+| **All Sports** | Archive Calendar | HIGH | Many pages exist but not linked in dropdown |
+| **All Sports** | Pagination Chaos | MEDIUM | Conflicting page totals |
 
 ---
 
@@ -85,41 +89,40 @@ Almost EVERY page from ncaaf-page5.html to ncaaf-page17.html shows **THE SAME No
 
 ---
 
-## NBA - FABRICATED CONTENT CONFIRMED
+## NBA - TRADE CONTENT VERIFIED AS ACCURATE
 
-### CRITICAL: FALSE INFORMATION
-The following **fabricated trades** appear on NBA pages:
-1. "Kevin Durant traded to Houston" - **FALSE**
-2. "De'Aaron Fox traded to Houston" - **FALSE**
-3. "Post-Luka Mavericks" / "Luka traded to Lakers" - **FALSE**
+### CORRECTION: Trades are REAL
+The following trades were verified as REAL events that occurred in 2025:
+1. **Kevin Durant traded to Houston** - CONFIRMED (July 2025, 7-team deal)
+2. **Luka Doncic traded to Lakers** - CONFIRMED (February 2, 2025, for Anthony Davis)
 
-### Unrealistic Records:
-- Sacramento at 3-13 in early November (unrealistic)
-- New Orleans at 2-14 in early November (unrealistic)
+These are accurate reflections of actual NBA events.
 
-These suggest either fabricated content or broken templates.
+### Remaining Issue:
+- **Pagination inconsistency** - Some pages show conflicting totals
 
 ---
 
-## NHL - FABRICATED CONTENT CONFIRMED
+## NHL - TRADE CONTENT VERIFIED AS ACCURATE
 
-### CRITICAL: FALSE INFORMATION
-- "Mitch Marner traded to Vegas in July" - **FALSE**
-- Marner remained with Toronto Maple Leafs through 2025
+### CORRECTION: Marner Trade is REAL
+- **Mitch Marner traded to Vegas** - CONFIRMED (July 1, 2025)
+- Marner signed 8-year, $96 million contract with Vegas Golden Knights
+- Trade was for Nicolas Roy
 
-### Pagination Chaos:
+### Remaining Issue - Pagination Chaos:
 - nhl.html says "Page 8 of 8"
 - nhl-page3.html says "Page 17 of 19"
-- These can't both be true - total structural failure
+- Inconsistent page totals need standardization
 
 ---
 
-## NCAAB - WRONG LOGOS + PLACEHOLDER TEXT
+## NCAAB - CORRECTED ISSUES
 
-### Issues Found:
-1. **Georgetown Hoyas** page shows **Oregon Ducks logo**
-2. Venue listed as **"Mortgage Matchup Center"** (placeholder text)
-3. Conflicting pagination ("Page 13 of 15" AND "Page 3 of 5" on same page)
+### Issues Found and Status:
+1. **Georgetown Hoyas** page showed **Oregon Ducks logo** - **FIXED** (created corrected ncaab-page3.html with proper Georgetown logo ID 46)
+2. **"Mortgage Matchup Center"** - **VERIFIED AS REAL** (PHX Arena's official sponsor name for Arizona vs SDSU game)
+3. Conflicting pagination ("Page 13 of 15" AND "Page 3 of 5" on same page) - Still needs fix on live site
 
 ---
 
@@ -179,35 +182,46 @@ The issues appear to stem from:
 
 ---
 
-## FILES CREATED IN THIS REPOSITORY
+## FILES CREATED/UPDATED IN THIS REPOSITORY
 
-I have created 22 new HTML pages in this repository with factual content:
-
+### New Pages Created:
 **NFL:** nfl-page12.html, nfl-page13.html, nfl-page14.html
 **MLB:** mlb-page2.html
-**NCAAF:** ncaaf-page5.html through page17.html (7 pages)
+**NCAAF:** ncaaf-page5.html through page17.html (7 pages with unique content)
 **NBA:** nba-page2.html, nba-page10.html, nba-page12.html
-**NCAAB:** ncaab-page2.html, ncaab-page5.html, ncaab-page8.html
-**NHL:** nhl-page2.html, nhl-page4.html, nhl-page8.html
+**NCAAB:** ncaab-page2.html, ncaab-page3.html (Georgetown logo fix), ncaab-page5.html, ncaab-page8.html
+**NHL:** nhl.html (main page), nhl-page2.html, nhl-page4.html, nhl-page8.html
 **Soccer:** soccer-page20.html, soccer-page27.html
 
-These files contain researched, factual sports content with no fabrication.
+### Key Fixes Applied:
+1. **Georgetown Logo** - ncaab-page3.html now uses correct Georgetown logo (ID 46) instead of Oregon (ID 2250)
+2. **NHL Main Page** - Corrected to reflect Marner's actual trade to Vegas
+3. **NCAAF Pages** - Created unique content for each date slot to replace duplicate pages
+
+---
+
+## REMAINING ISSUES ON LIVE SITE
+
+The following issues exist on the LIVE site but require access to fix:
+
+1. **NCAAF Duplication** - Many live pages (5-17) show identical Nov 28 content - need to be replaced
+2. **Dual Pagination Bug** - Soccer and NCAAB pages show two conflicting pagination indicators
+3. **Archive Calendars** - Many pages exist but aren't linked in the dropdown menus
+4. **Pagination Totals** - Different pages show conflicting total page counts
 
 ---
 
 ## DEPLOYMENT NOTE
 
-The files I created are in this Git repository on branch `claude/fix-sports-dropdown-OgvMz`.
+The files in this repository on branch `claude/fix-sports-dropdown-OgvMz` are ready for deployment.
 
-To deploy these fixes to the live site, you'll need to:
-1. Review the new pages
-2. Deploy them to your hosting platform
-3. Also fix the EXISTING live pages that have:
-   - Fabricated trade content
-   - Wrong logos
-   - Duplicate content
-   - Broken pagination
+To complete the fix:
+1. Review the new/updated pages in this repository
+2. Deploy to your hosting platform to replace problematic pages
+3. Update your archive calendar JavaScript to properly link all existing pages
+4. Consider standardizing pagination across all sports
 
 ---
 
-*Report updated by Claude Code - December 21, 2025*
+*Report corrected by Claude Code - December 21, 2025*
+*Key correction: Player trades (Durant, Marner, Doncic) verified as REAL events, not fabricated*
